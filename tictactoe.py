@@ -1,21 +1,34 @@
 from agents import display_board
+import gymnasium as gym
+from constants import STUDENT
 
-class TicTacToeEnv():
+class TicTacToeEnv(gym.Env):
     
-    def __init__(self, move_checker=None):
-        self.reset()
+    def __init__(self, move_checker, teacher):
+        self.move_checker = move_checker
+        self.teacher = teacher
         
         self.reward_magnitude = 2
         self.reward_draw = 1
         self.reward_optimal_move = 0.1
         self.winner = None
         
-        self.move_checker = move_checker
+        # These would be used in regular RL
+        self.action_space = gym.spaces.Discrete(9)
+        self.observation_space = gym.spaces.Box(low=0, high=2, shape=(9,), dtype=int)
+        
+        self.reset()
         
     def reset(self):
         self.board = [x for x in range(1, 10)]
-        self.current_player = 'X'
-        return self._obs()
+        self._step(self.teacher.act(self.board), self.teacher.player)
+        return self._obs(), {} # Return observation and empty info
+    
+    def render(self):
+        display_board(self.board, print_board=True)
+        
+    def close(self):
+        pass
     
     def _obs(self):
         """
@@ -51,7 +64,7 @@ class TicTacToeEnv():
         
         return None
     
-    def step(self, action, player):
+    def _step(self, action, current_player):
         """
         Take a step in the environment by placing a mark on the board
         Args:
@@ -59,17 +72,17 @@ class TicTacToeEnv():
             player: int 1 or 2 indicating which player
         Returns:
             tuple: (observation, reward_p1, reward_p2, done)
-        """
+        """       
         # Validate action
         if not 0 <= action <= 8:
             raise ValueError("Invalid action. Must be between 0 and 8")
         if self.board[action] not in range(1, 10):
             raise ValueError("Invalid action. Position already taken")
-        if player not in ['X', 'O']:
+        if current_player not in ['X', 'O']:
             raise ValueError("Invalid player. Must be X or O")
 
         # Place mark on board
-        self.board[action] = player
+        self.board[action] = current_player
         
         # Check for winner
         winner = self.check_winner()
@@ -82,28 +95,40 @@ class TicTacToeEnv():
             done = False
         
         # Calculate rewards
-        reward_X = 0
-        reward_O = 0
+        reward = 0
         if winner == 'X':
-            reward_X = self.reward_magnitude
-            reward_O = -self.reward_magnitude
+            reward = -self.reward_magnitude
         elif winner == 'O':
-            reward_X = -self.reward_magnitude
-            reward_O = self.reward_magnitude
+            reward = self.reward_magnitude
         elif winner == 'Draw':
-            reward_X = self.reward_draw
-            reward_O = self.reward_draw
+            reward = self.reward_draw
         else:
-            if action in self.move_checker.get_optimal_moves(self.board, player):
+            if action in self.move_checker.get_optimal_moves(self.board, current_player):
                 # Give the player who made the optimal move a small reward
-                reward_X = self.reward_optimal_move if player == 'X' else 0
-                reward_O = self.reward_optimal_move if player == 'O' else 0
+                reward = self.reward_optimal_move if current_player == 'O' else 0
             else:
                 # Penalize the player who made the suboptimal move
-                reward_X = -self.reward_optimal_move if player == 'X' else 0
-                reward_O = -self.reward_optimal_move if player == 'O' else 0
+                reward = -self.reward_optimal_move if current_player == 'O' else 0
         
-        return self._obs(), reward_X, reward_O, done
+        # Immediately compute the teacher's move if the game is not done
+        if not done and current_player != 'X':
+            _, _, done, _, _ = self._step(self.teacher.act(self.board), self.teacher.player)
+        
+        # The player will always be O
+        # Truncation is always False, and empty dict is returned for now
+        return self._obs(), reward, done, False, {}
+    
+    def step(self, action):
+        obs, reward, terminated, truncated, info = self._step(action, STUDENT) # Player is always O
+        return obs, reward, terminated, truncated, info
+    
+class TicTacToeSAE(TicTacToeEnv):
+    
+    def __init__(self, move_checker):
+        super().__init__(move_checker)
+        
+    def step(self, action):
+        pass
         
         
         

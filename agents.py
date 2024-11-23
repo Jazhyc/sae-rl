@@ -5,9 +5,7 @@ import os
 import re
 import time
 
-RETRY_COUNT = 3
-SLEEP_TIME = 1
-TOP_K_FEATURES = 20
+from constants import RETRY_COUNT, SLEEP_TIME
 
 load_dotenv()
 
@@ -71,7 +69,7 @@ def extract_move(text):
     
     raise ValueError("Could not extract move from text")
 
-def get_valid_move(agent, state, verbose=False):
+def get_valid_move(agent, state, verbose=True):
     for _ in range(RETRY_COUNT):
         try:
             completion_text = get_completion(agent.model)
@@ -82,8 +80,7 @@ def get_valid_move(agent, state, verbose=False):
                 raise ValueError("Move already taken")
             return move, completion_text
         
-        except Exception as e:
-            
+        except Exception as e: 
             add_statistic(agent.stats, 'invalid_move')
             if verbose:
                 print(f"Error: {e}")
@@ -105,7 +102,7 @@ def display_board(board, print_board=False):
                 text += '\n'
             
         if print_board:
-            print(text)
+            print(text, end='\n')
             
         return text
 
