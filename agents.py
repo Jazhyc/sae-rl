@@ -7,6 +7,7 @@ import time
 
 RETRY_COUNT = 3
 SLEEP_TIME = 1
+TOP_K_FEATURES = 20
 
 load_dotenv()
 
@@ -18,7 +19,8 @@ with open('prompts/user_prompt.txt', 'r') as f:
     
 api_format = {
     'system' : {"role": "system", "content": system_prompt},
-    'user' : {"role": "user", "content": None} # Placeholder for user input
+    'user' : {"role": "user", "content": None}, # Placeholder for user input
+    'assistant' : {"role": "assistant", "content": None} # Placeholder for assistant response
 }
 
 def add_statistic(stats, key):
@@ -26,6 +28,13 @@ def add_statistic(stats, key):
         stats[key] = 1
     else:
         stats[key] += 1
+    return stats
+
+def append_statistic(stats, key, value):
+    if key not in stats:
+        stats[key] = [value]
+    else:
+        stats[key].append(value)
     return stats
 
 client = goodfire.Client(
@@ -38,7 +47,8 @@ def get_completion(model):
         messages=[
             api_format['system'],
             api_format['user']
-        ]
+        ],
+        max_completion_tokens=25
     )
     
     return completion.choices[0].message['content']
@@ -70,7 +80,7 @@ def get_valid_move(agent, state, verbose=False):
             # Check if move is already taken
             if state[move] in ['X', 'O']:
                 raise ValueError("Move already taken")
-            return move
+            return move, completion_text
         
         except Exception as e:
             
@@ -80,7 +90,7 @@ def get_valid_move(agent, state, verbose=False):
             time.sleep(SLEEP_TIME)
         
     add_statistic(agent.stats, 'fail_safe')
-    return random.choice([i for i, spot in enumerate(state) if spot not in ['X', 'O']])
+    return random.choice([i for i, spot in enumerate(state) if spot not in ['X', 'O']]), completion_text
 
 def display_board(board, print_board=False):
         """
@@ -137,14 +147,41 @@ class LLMAgent(BaseAgent):
         
         self.model = goodfire.Variant("meta-llama/Meta-Llama-3-8B-Instruct")
         
-        self.stats = {}
+        self.stats = {'top_features': {}}
+        self.get_context = False
         
     def act(self, state):
         
         current_prompt = user_prompt.format(board=display_board(state), player_type=self.player)
         api_format['user']['content'] = current_prompt
         
-        move = get_valid_move(self, state)
+        move, response = get_valid_move(self, state)
+        
+        # Increase counter for this move
+        add_statistic(self.stats, f'move_{move+1}')
+        
+        api_format['assistant']['content'] = response
+        
+        if self.get_context:
+            context = client.features.inspect(
+                [
+                    api_format['system'],
+                    api_format['user'],
+                    api_format['assistant']
+                ],
+                model=self.model
+            )
+            
+            for token in context.tokens:
+                token_text = token._token.strip()
+                
+                # check if token is an int
+                if token_text.isdigit():
+                    
+                    if move == int(token_text) - 1:             
+                        top_features = token.inspect()
+                        append_statistic(self.stats['top_features'], tuple(state), top_features)
+                        break
         
         return move
     
