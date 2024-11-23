@@ -31,8 +31,8 @@ def play_game(agent1, agent2, move_checker):
 
 if __name__ == '__main__':
     move_checker = MoveChecker()
-    agent1 = OptimalAgent('O', move_checker)
-    agent2 = RandomAgent('X')
+    agent1 = OptimalAgent('X', move_checker)
+    agent2 = RandomAgent('O')
     
     results = {'X': 0, 'O': 0, 'Draw': 0}
     for _ in tqdm(range(100)):

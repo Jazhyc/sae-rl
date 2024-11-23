@@ -17,6 +17,11 @@ class MoveChecker:
         return action in optimal_moves
 
     def get_optimal_moves(self, board, player):
+        
+        board_key = tuple(board)
+        if board_key in self.hash_table[player]:
+            return self.hash_table[player][board_key]
+        
         best_score = None
         optimal_moves = []
         for move in self.available_moves(board):
@@ -28,6 +33,8 @@ class MoveChecker:
                 optimal_moves = [move]
             elif score == best_score:
                 optimal_moves.append(move)
+                
+        self.hash_table[player][board_key] = optimal_moves
         return optimal_moves
 
     def minimax(self, board, player, is_maximizing):
