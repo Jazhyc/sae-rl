@@ -1,3 +1,5 @@
+from agents import display_board
+
 class TicTacToeEnv():
     
     def __init__(self, move_checker=None):
@@ -108,3 +110,4 @@ class TicTacToeEnv():
             
 if __name__ == '__main__':
     env = TicTacToeEnv()
+    display_board(env.board, print_board=True)

@@ -1,0 +1,5 @@
+Now here is the current board:
+{board}
+You are {player_type}
+
+Output your move (1-9):

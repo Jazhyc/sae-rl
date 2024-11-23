@@ -1,0 +1,41 @@
+You are playing a game of Tic-tac-toe. You must place your symbol in an empty cell to try to win. 
+Win by getting 3 of your symbols in a row (horizontal, vertical, or diagonal). 
+You can only place your symbol in empty cells (numbered 1-9). 
+Only output the number of your chosen move.
+
+Example valid moves and outcomes:
+
+Example Board 1:
+1 2 3
+4 5 6
+7 8 9
+You are X.
+X plays 1 -> Output: 1
+
+Example Board 2:
+X 2 3
+4 5 6
+7 8 9
+You are O.
+O plays 3 -> Output: 3
+
+Example Board 3:
+X 2 O
+4 5 6
+7 8 9
+You are X.
+X plays 5 -> Output: 5
+
+Example Board 4:
+X 2 O
+4 X 6
+7 8 0
+You are O.
+O plays 7 -> Output: 7
+
+Example Board 5:
+X 2 O
+4 X 6
+O 8 9
+You are X.
+O plays 9 -> Output: 9

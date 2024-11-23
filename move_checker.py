@@ -38,11 +38,13 @@ class MoveChecker:
         return optimal_moves
 
     def minimax(self, board, player, is_maximizing):
+        original_player = self.swap_player(player) if not is_maximizing else player
+
         def minimax_recursion(board, player, is_maximizing, alpha, beta):
             winner = self.check_winner(board)
-            if winner == 'X':
+            if winner == original_player:
                 return 1
-            elif winner == 'O':
+            elif winner == self.swap_player(original_player):
                 return -1
             elif self.is_board_full(board):
                 return 0
