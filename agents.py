@@ -6,6 +6,7 @@ import re
 import time
 
 RETRY_COUNT = 3
+SLEEP_TIME = 1
 
 load_dotenv()
 
@@ -69,18 +70,17 @@ def get_valid_move(agent, state, verbose=False):
             # Check if move is already taken
             if state[move] in ['X', 'O']:
                 raise ValueError("Move already taken")
-            
             return move
+        
         except Exception as e:
             
             add_statistic(agent.stats, 'invalid_move')
             if verbose:
                 print(f"Error: {e}")
-            time.sleep(1)
+            time.sleep(SLEEP_TIME)
         
-        # Fail safe
-        add_statistic(agent.stats, 'fail_safe')
-        return random.choice([i for i, spot in enumerate(state) if spot not in ['X', 'O']])
+    add_statistic(agent.stats, 'fail_safe')
+    return random.choice([i for i, spot in enumerate(state) if spot not in ['X', 'O']])
 
 def display_board(board, print_board=False):
         """

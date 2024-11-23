@@ -1,5 +1,5 @@
 from tictactoe import TicTacToeEnv
-from agents import OptimalAgent, RandomAgent, LLMAgent, RLAgent
+from agents import OptimalAgent, RandomAgent, LLMAgent, RLAgent, add_statistic
 from move_checker import MoveChecker
 from agents import display_board
 import concurrent.futures
@@ -43,6 +43,7 @@ def play_game(teacher, student, move_checker, verbose=False):
         for agent in agents:
             action = agent.act(state)
             
+            
             if verbose:
                 display_board(state, print_board=True)
                 print(f"Player {agent.player} selects {action + 1}")
@@ -51,6 +52,7 @@ def play_game(teacher, student, move_checker, verbose=False):
             
             # Update agents, teacher does not learn
             if agent != teacher:
+                add_statistic(agent.stats, 'step')
                 student.learn(state, action, reward_O, new_state)
             
             if done:
@@ -60,7 +62,7 @@ def play_game(teacher, student, move_checker, verbose=False):
         
     return env.winner
 
-if __name__ == '__main__':
+def run_experiment():
     move_checker = MoveChecker()
     teacher = OptimalAgent('X', move_checker)
     student = LLMAgent('O')
@@ -76,3 +78,9 @@ if __name__ == '__main__':
         results = multi_thread(results, teacher, student, move_checker)
     
     print(results)
+    print(student.stats)
+    
+    return student, results
+
+if __name__ == '__main__':
+    run_experiment()
