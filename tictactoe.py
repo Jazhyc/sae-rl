@@ -1,6 +1,10 @@
 from agents import display_board
 import gymnasium as gym
 from constants import STUDENT
+import goodfire
+import dotenv
+
+dotenv.load_dotenv()
 
 class TicTacToeEnv(gym.Env):
     
@@ -126,6 +130,8 @@ class TicTacToeSAE(TicTacToeEnv):
     
     def __init__(self, move_checker):
         super().__init__(move_checker)
+        
+        # self.client
         
     def step(self, action):
         pass

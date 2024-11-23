@@ -1,7 +1,7 @@
 from tictactoe import TicTacToeEnv
 from agents import OptimalAgent, RandomAgent, LLMAgent, RLAgent, add_statistic
 from move_checker import MoveChecker
-from agents import display_board
+from utils import display_board
 import concurrent.futures
 
 from tqdm import tqdm
