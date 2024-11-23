@@ -7,6 +7,7 @@ import concurrent.futures
 from tqdm import tqdm
 
 NUM_GAMES = 10
+NUM_WORKERS = 4 # API seems to be rate limited to 100 requests per minute
 
 def single_thread(results, teacher, agent, move_checker):
     for _ in tqdm(range(NUM_GAMES)):
@@ -16,7 +17,7 @@ def single_thread(results, teacher, agent, move_checker):
     return results
 
 def multi_thread(results, teacher, agent, move_checker):
-    with concurrent.futures.ThreadPoolExecutor() as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=NUM_WORKERS) as executor:
         futures = [executor.submit(play_game, teacher, agent, move_checker) for _ in range(NUM_GAMES)]
         for future in tqdm(concurrent.futures.as_completed(futures), total=NUM_GAMES):
             winner = future.result()

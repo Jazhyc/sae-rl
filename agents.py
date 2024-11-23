@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 import goodfire
 import os
 import re
+import time
 
 RETRY_COUNT = 3
 
@@ -18,6 +19,13 @@ api_format = {
     'system' : {"role": "system", "content": system_prompt},
     'user' : {"role": "user", "content": None} # Placeholder for user input
 }
+
+def add_statistic(stats, key):
+    if key not in stats:
+        stats[key] = 1
+    else:
+        stats[key] += 1
+    return stats
 
 client = goodfire.Client(
     os.getenv('GOODFIRE_API_KEY'),
@@ -52,7 +60,7 @@ def extract_move(text):
     
     raise ValueError("Could not extract move from text")
 
-def get_valid_move(agent, state):
+def get_valid_move(agent, state, verbose=False):
     for _ in range(RETRY_COUNT):
         try:
             completion_text = get_completion(agent.model)
@@ -60,12 +68,19 @@ def get_valid_move(agent, state):
             
             # Check if move is already taken
             if state[move] in ['X', 'O']:
-                raise ValueError("Invalid move")
+                raise ValueError("Move already taken")
             
             return move
-        except:
-            agent.error_move_count += 1
-            return random.choice([i for i, spot in enumerate(state) if spot not in ['X', 'O']])
+        except Exception as e:
+            
+            add_statistic(agent.stats, 'invalid_move')
+            if verbose:
+                print(f"Error: {e}")
+            time.sleep(1)
+        
+        # Fail safe
+        add_statistic(agent.stats, 'fail_safe')
+        return random.choice([i for i, spot in enumerate(state) if spot not in ['X', 'O']])
 
 def display_board(board, print_board=False):
         """
@@ -119,9 +134,10 @@ class LLMAgent(BaseAgent):
     
     def __init__(self, player):
         self.player = player
-        self.error_move_count = 0
         
         self.model = goodfire.Variant("meta-llama/Meta-Llama-3-8B-Instruct")
+        
+        self.stats = {}
         
     def act(self, state):
         
