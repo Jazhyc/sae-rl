@@ -18,11 +18,17 @@ class TicTacToeEnv(gym.Env):
         self.reward_magnitude = 2
         self.reward_draw = 1
         self.reward_optimal_move = 0.1
-        self.winner = None
         
         # These would be used in regular RL
         self.action_space = gym.spaces.Discrete(9)
         self.observation_space = gym.spaces.Box(low=0, high=2, shape=(9,), dtype=int)
+        
+        # Some statistics, does not get reset
+        self.results = {
+            'X': 0,
+            'O': 0,
+            'Draw': 0
+        }
         
         self.reset()
         
@@ -95,8 +101,7 @@ class TicTacToeEnv(gym.Env):
         winner = self.check_winner()
         
         if winner:
-            # Ideally, the reset will be called by the controller
-            self.winner = winner
+            self.results[winner] += 1
             done = True
         else:
             done = False
@@ -184,7 +189,7 @@ class TicTacToeSAE(TicTacToeEnv):
             reward = -ERROR_PUNISHMENT_MAGNITUDE
             self.will_punish = False
         
-        return obs, reward, terminated, truncated, info
+        return obs, reward, terminated, truncated, self.stats
          
 if __name__ == '__main__':
     env = TicTacToeEnv()

@@ -3,8 +3,8 @@ from dotenv import load_dotenv
 import goodfire
 
 from copy import deepcopy
-
 from utils import add_statistic, get_valid_move, get_top_features, get_base_api_format, display_board
+from stable_baselines3 import PPO
 
 class BaseAgent():
     
@@ -39,13 +39,13 @@ class OptimalAgent(BaseAgent):
     
 class LLMAgent(BaseAgent):
     
-    def __init__(self, player):
+    def __init__(self, player, get_context=False):
         self.player = player
         
         self.model = goodfire.Variant("meta-llama/Meta-Llama-3-8B-Instruct")
         
         self.stats = {'top_features': {}}
-        self.get_context = False
+        self.get_context = get_context
         
         self.api_template = get_base_api_format()
         
@@ -69,8 +69,16 @@ class LLMAgent(BaseAgent):
         
         return move
     
-class RLAgent(LLMAgent):
+class RLAgent(BaseAgent):
     
-    def __init__(self, player):
+    def __init__(self, player, env):
         super().__init__(player)
-        self.model = goodfire.Variant("meta-llama/Meta-Llama-3-8B-RL")
+        self.stats = {}
+        
+    def setup_model(self, env):
+        self.model = PPO("MlpPolicy", env, verbose=1)
+    
+    # Used during testing
+    def act(self, state):
+        actions, _ = self.model.predict(state)
+        return actions
