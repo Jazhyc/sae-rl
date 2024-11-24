@@ -2,11 +2,14 @@ from tictactoe import TicTacToeEnv, TicTacToeSAE
 from agents import OptimalAgent, RandomAgent, LLMAgent, RLAgent, add_statistic
 from move_checker import MoveChecker
 from utils import display_board
+import pickle
 
 from tqdm import tqdm
-from constants import TEACHER, STUDENT, NUM_GAMES
+from constants import TEACHER, STUDENT, NUM_GAMES, NUM_ENVS
 
 from stable_baselines3.common.callbacks import CheckpointCallback
+from stable_baselines3.common.env_util import make_vec_env
+from stable_baselines3.common.vec_env import SubprocVecEnv
 
 def baseline_experiment(agent, env, num_games=NUM_GAMES):
     for _ in tqdm(range(num_games)):
@@ -16,15 +19,20 @@ def saerl_learning(agent, env, num_steps):
     
     checkpoint_callback = CheckpointCallback(
         save_freq=100,
-        save_path="./output/checkpoints/",
+        save_path="./output/checkpoints/exp5_final/",
         name_prefix="saerl_in_progress",
         save_replay_buffer=True,
         save_vecnormalize=True,
     )
     
     agent.setup_model(env)
-    agent.model.learn(total_timesteps=num_steps, progress_bar=True, callback=checkpoint_callback)
-    agent.model.save("output/saerl_model")
+    
+    if not agent.test_mode:
+        agent.model.learn(total_timesteps=num_steps, callback=checkpoint_callback, progress_bar=True)
+        agent.model.save("output/saerl_model_biggest")
+    else:
+        for _ in tqdm(range(num_steps)):
+            regular_game(agent, env)
 
 def regular_game(student, env, verbose=False):
     
@@ -42,24 +50,37 @@ def regular_game(student, env, verbose=False):
         new_state, reward, done, _, _ = env.step(action)
         
         add_statistic(student.stats, 'step')
-        student.learn(state, action, reward, new_state)
         
         if done:
             break
         
         state = new_state
 
-def run_experiment(num_games=NUM_GAMES, get_context=False, use_rl_agent=False):
+def run_experiment(num_games=NUM_GAMES, get_context=False, use_rl_agent=False, test_agent=False):
     
     move_checker = MoveChecker()
     teacher = OptimalAgent(TEACHER, move_checker)
     
     if use_rl_agent:
-        student = RLAgent(STUDENT)
-        env = TicTacToeSAE(move_checker, teacher)
+        student = RLAgent(STUDENT, test_mode=test_agent)
+        
+        def make_env():
+            def _init():
+                return TicTacToeSAE(move_checker, teacher, test_agent)
+            return _init
+
+        # Create X parallel environments
+        if NUM_ENVS == 1 or test_agent:
+            env = TicTacToeSAE(move_checker, teacher, test_agent)
+        else:
+            env = SubprocVecEnv([
+                lambda: TicTacToeSAE(move_checker, teacher, test_agent) 
+                for _ in range(NUM_ENVS)  # Creates X parallel environments
+            ])
+        
         saerl_learning(student, env, num_games)
     else:
-        student = LLMAgent(STUDENT, get_context=True)
+        student = LLMAgent(STUDENT, get_context=get_context)
         env = TicTacToeEnv(move_checker, teacher)
         baseline_experiment(student, env, num_games)
     
@@ -68,11 +89,8 @@ def run_experiment(num_games=NUM_GAMES, get_context=False, use_rl_agent=False):
     student.get_context = get_context
     
     results = env.results
-        
-    # if use_rl_agent:
-    #     return student, 
     
     return student, env, results
 
 if __name__ == '__main__':
-    run_experiment()
+    results_tuple = run_experiment(num_games=10000, get_context=False, use_rl_agent=True)

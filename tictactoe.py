@@ -1,7 +1,7 @@
 from agents import display_board
 import gymnasium as gym
-from constants import STUDENT, NUM_ACTIONS_SAE, STEERING_BOUND, ERROR_PUNISHMENT_MAGNITUDE
-from utils import get_base_api_format, get_valid_move, convert_board_to_observation, add_statistic
+from constants import STUDENT, NUM_ACTIONS_SAE, STEERING_BOUND, ERROR_PUNISHMENT
+from utils import get_base_api_format, get_valid_move, convert_board_to_observation, add_statistic, append_statistic
 from copy import deepcopy
 import goodfire
 import dotenv
@@ -136,7 +136,7 @@ class TicTacToeEnv(gym.Env):
     
 class TicTacToeSAE(TicTacToeEnv):
     
-    def __init__(self, move_checker, teacher):
+    def __init__(self, move_checker, teacher, test_mode=False, verbose=False):
         super().__init__(move_checker, teacher)
         
         # Loads a Counter from Collections
@@ -156,7 +156,9 @@ class TicTacToeSAE(TicTacToeEnv):
         self.model = goodfire.Variant("meta-llama/Meta-Llama-3-8B-Instruct")
         self.api_template = get_base_api_format()
         
-        self.stats = {}
+        self.stats = {'activations': {}}
+        self.test_mode = test_mode
+        self.verbose = verbose
         
     def reset(self, seed=None):
         self.board = [x for x in range(1, 10)]
@@ -170,8 +172,17 @@ class TicTacToeSAE(TicTacToeEnv):
         # Zip the action features with the action values
         action_values = zip(self.action_features, action)
         
+        if self.test_mode:
+            logged_action_values = list(action_values)
+            state_key = tuple(self.board)
+            append_statistic(self.stats['activations'], state_key, logged_action_values)
+            
+        
         for feature, value in action_values:
             self.model.set(feature, value)
+            
+            if self.verbose:
+                print(f"Setting {feature} to {value}")
             
         # Create copy of the template
         api_format = deepcopy(self.api_template)
@@ -186,7 +197,7 @@ class TicTacToeSAE(TicTacToeEnv):
         obs = convert_board_to_observation(obs)
         
         if self.will_punish:
-            reward = -ERROR_PUNISHMENT_MAGNITUDE
+            reward = ERROR_PUNISHMENT
             self.will_punish = False
         
         return obs, reward, terminated, truncated, self.stats

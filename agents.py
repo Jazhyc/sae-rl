@@ -1,10 +1,12 @@
 import random
 from dotenv import load_dotenv
 import goodfire
+import torch.nn as nn
 
 from copy import deepcopy
 from utils import add_statistic, get_valid_move, get_top_features, get_base_api_format, display_board
 from stable_baselines3 import PPO
+from stable_baselines3.common.policies import ActorCriticPolicy
 
 class BaseAgent():
     
@@ -71,20 +73,36 @@ class LLMAgent(BaseAgent):
     
 class RLAgent(BaseAgent):
     
-    def __init__(self, player):
+    def __init__(self, player, test_mode=False):
         super().__init__(player)
         self.stats = {}
+        self.test_mode = test_mode
         
     def setup_model(self, env):
+        
+        policy_kwargs = dict(
+            net_arch=dict(
+                pi=[100, 100, 100],  # Actor network architecture
+                vf=[100, 100, 100]   # Critic network architecture
+            ),
+            activation_fn=nn.ReLU
+        )
+        
         self.model = PPO(
-            "MlpPolicy", 
+            ActorCriticPolicy, 
             env, 
             n_steps=8,
             verbose=1, 
             batch_size=8,
+            learning_rate=3e-5,
             device='cpu',
+            policy_kwargs=policy_kwargs,
             tensorboard_log="output/tensorboard"
-            )
+        )
+        
+        if self.test_mode:
+            print("Loading trained model")
+            self.model.load("output/saerl_model")
     
     # Used during testing
     def act(self, state):
