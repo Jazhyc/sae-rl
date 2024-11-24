@@ -17,7 +17,7 @@ class TicTacToeEnv(gym.Env):
         
         self.reward_magnitude = 2
         self.reward_draw = 1
-        self.reward_optimal_move = 0.1
+        self.reward_optimal_move = 1
         
         # These would be used in regular RL
         self.action_space = gym.spaces.Discrete(9)

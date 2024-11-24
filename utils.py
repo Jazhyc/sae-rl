@@ -76,7 +76,7 @@ def get_completion(model, api_format):
     
     return completion.choices[0].message['content']
 
-def extract_move(text, verbose=True):
+def extract_move(text, verbose=False):
     """
     It's possible that the model will output the move number in different formats.
     We should use regex to extract the number regardless of the format.
@@ -114,7 +114,7 @@ def display_board(board, print_board=False):
             
         return text
 
-def get_valid_move(agent, state, api_format, verbose=True, is_sae_rl=False):
+def get_valid_move(agent, state, api_format, verbose=False, is_sae_rl=False):
     for _ in range(RETRY_COUNT):
         try:
             completion_text = get_completion(agent.model, api_format)

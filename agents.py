@@ -71,12 +71,20 @@ class LLMAgent(BaseAgent):
     
 class RLAgent(BaseAgent):
     
-    def __init__(self, player, env):
+    def __init__(self, player):
         super().__init__(player)
         self.stats = {}
         
     def setup_model(self, env):
-        self.model = PPO("MlpPolicy", env, verbose=1)
+        self.model = PPO(
+            "MlpPolicy", 
+            env, 
+            n_steps=8,
+            verbose=1, 
+            batch_size=8,
+            device='cpu',
+            tensorboard_log="output/tensorboard"
+            )
     
     # Used during testing
     def act(self, state):
