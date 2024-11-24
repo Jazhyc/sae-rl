@@ -1,4 +1,4 @@
-from tictactoe import TicTacToeEnv
+from tictactoe import TicTacToeEnv, TicTacToeSAE
 from agents import OptimalAgent, RandomAgent, LLMAgent, RLAgent, add_statistic
 from move_checker import MoveChecker
 from utils import display_board
@@ -23,20 +23,14 @@ def multi_thread(results, teacher, agent, move_checker, num_games=NUM_GAMES):
             results[winner] += 1
     
     return results
-    
 
-def play_game(teacher, student, move_checker, verbose=False):
-    env = TicTacToeEnv(move_checker, teacher)
-    done = False
-    
-    # Check that both agents are different
-    if teacher.player == student.player:
-        raise ValueError("Both agents cannot be the same player")
+def regular_game(student, env, verbose=False):
     
     state, _ = env.reset()
+    done = False
     
     while not done:
-        
+            
         action = student.act(state)
         
         if verbose:
@@ -53,12 +47,33 @@ def play_game(teacher, student, move_checker, verbose=False):
         
         state = new_state
         
+def sae_rl_game(student, env, verbose=False):
+    pass
+
+def play_game(teacher, student, move_checker, verbose=False):
+    
+    
+    # Check that both agents are different
+    if teacher.player == student.player:
+        raise ValueError("Both agents cannot be the same player")
+    
+    if not isinstance(student, RLAgent):
+        env = TicTacToeEnv(move_checker, teacher)
+        regular_game(student, env, verbose)   
+    else:
+        env = TicTacToeSAE(move_checker, teacher)
+        sae_rl_game(student, env, verbose)
+        
     return env.winner
 
-def run_experiment(num_games=NUM_GAMES, get_context=False):
+def run_experiment(num_games=NUM_GAMES, get_context=False, use_rl_agent=False):
     move_checker = MoveChecker()
     teacher = OptimalAgent(TEACHER, move_checker)
-    student = LLMAgent(STUDENT)
+    
+    if use_rl_agent:
+        student = RLAgent(STUDENT)
+    else:
+        student = LLMAgent(STUDENT)
     
     # Determines whether to use the context or not
     # The context takes a long time to generate
@@ -69,9 +84,9 @@ def run_experiment(num_games=NUM_GAMES, get_context=False):
     # If agent is RLAgent, always use single_thread as multiple actors are not currently supported
     results = single_thread(results, teacher, student, move_checker, num_games)
 
-    
-    print(results)
-    print(student.stats)
+        
+    # if use_rl_agent:
+    #     return student, 
     
     return student, results
 

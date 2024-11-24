@@ -55,10 +55,12 @@ class LLMAgent(BaseAgent):
         api_format = deepcopy(self.api_template)
         api_format['user']['content'] = self.api_template['user']['content'].format(board=display_board(state), player_type=self.player)
         
+        # Skip punishment since this agent is not learning
         move, response = get_valid_move(self, state, api_format)
         
         # Increase counter for this move
         add_statistic(self.stats, f'move_{move+1}')
+        add_statistic(self.stats, 'step') # We cannot access this in main loop I think
         
         api_format['assistant']['content'] = response
         

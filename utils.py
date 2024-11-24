@@ -1,4 +1,5 @@
 import os, time, random, re
+import numpy as np
 from constants import RETRY_COUNT, SLEEP_TIME
 import goodfire
 import dotenv
@@ -75,7 +76,7 @@ def get_completion(model, api_format):
     
     return completion.choices[0].message['content']
 
-def extract_move(text):
+def extract_move(text, verbose=True):
     """
     It's possible that the model will output the move number in different formats.
     We should use regex to extract the number regardless of the format.
@@ -90,7 +91,10 @@ def extract_move(text):
             return move - 1
         else:
             raise ValueError("Invalid move")
-    
+        
+    if verbose:
+        print(text)
+        
     raise ValueError("Could not extract move from text")
 
 def display_board(board, print_board=False):
@@ -110,7 +114,7 @@ def display_board(board, print_board=False):
             
         return text
 
-def get_valid_move(agent, state, api_format, verbose=True):
+def get_valid_move(agent, state, api_format, verbose=True, is_sae_rl=False):
     for _ in range(RETRY_COUNT):
         try:
             completion_text = get_completion(agent.model, api_format)
@@ -118,6 +122,9 @@ def get_valid_move(agent, state, api_format, verbose=True):
             
             # Check if move is already taken
             if state[move] in ['X', 'O']:
+                if verbose:
+                    print(state)
+                    print(move)
                 raise ValueError("Move already taken")
             return move, completion_text
         
@@ -128,4 +135,29 @@ def get_valid_move(agent, state, api_format, verbose=True):
             time.sleep(SLEEP_TIME)
         
     add_statistic(agent.stats, 'fail_safe')
+    
+    if is_sae_rl:
+        agent.will_punish = True
+    
     return random.choice([i for i, spot in enumerate(state) if spot not in ['X', 'O']]), completion_text
+
+def convert_board_to_observation(board):
+    """
+    Converts the current board state into a format recognizable by Stable Baselines.
+    
+    Args:
+        board (list): The current board state as a list of length 9.
+                    Each element should be 'X', 'O', or None.
+    
+    Returns:
+        np.ndarray: A numpy array of shape (9,) with values 0, 1, or 2.
+    """
+    observation = np.zeros(9, dtype=int)
+    for i, cell in enumerate(board):
+        if cell == 'X':
+            observation[i] = 1
+        elif cell == 'O':
+            observation[i] = 2
+        else:
+            observation[i] = 0
+    return observation
