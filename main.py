@@ -4,15 +4,26 @@ from move_checker import MoveChecker
 from utils import display_board
 
 from tqdm import tqdm
-from constants import TEACHER, STUDENT, NUM_GAMES, NUM_WORKERS
+from constants import TEACHER, STUDENT, NUM_GAMES
+
+from stable_baselines3.common.callbacks import CheckpointCallback
 
 def baseline_experiment(agent, env, num_games=NUM_GAMES):
     for _ in tqdm(range(num_games)):
         regular_game(agent, env)
         
 def saerl_learning(agent, env, num_steps):
+    
+    checkpoint_callback = CheckpointCallback(
+        save_freq=100,
+        save_path="./output/checkpoints/",
+        name_prefix="saerl_in_progress",
+        save_replay_buffer=True,
+        save_vecnormalize=True,
+    )
+    
     agent.setup_model(env)
-    agent.model.learn(total_timesteps=num_steps, progress_bar=True)
+    agent.model.learn(total_timesteps=num_steps, progress_bar=True, callback=checkpoint_callback)
     agent.model.save("output/saerl_model")
 
 def regular_game(student, env, verbose=False):
