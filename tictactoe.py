@@ -16,7 +16,7 @@ class TicTacToeEnv(gym.Env):
         self.teacher = teacher
         
         self.reward_magnitude = 2
-        self.reward_draw = 1
+        self.reward_draw = 10
         self.reward_optimal_move = 1
         
         # These would be used in regular RL
@@ -113,6 +113,7 @@ class TicTacToeEnv(gym.Env):
         elif winner == 'O':
             reward = self.reward_magnitude
         elif winner == 'Draw':
+            print("Draw")
             reward = self.reward_draw
         else:
             if action in self.move_checker.get_optimal_moves(self.board, current_player):
@@ -152,6 +153,7 @@ class TicTacToeSAE(TicTacToeEnv):
         
         # Used when the agent makes an invalid move, set by get_valid_move
         self.will_punish = False
+        self.minor_punish = False
         
         self.model = goodfire.Variant("meta-llama/Meta-Llama-3-8B-Instruct")
         self.api_template = get_base_api_format()
@@ -199,6 +201,10 @@ class TicTacToeSAE(TicTacToeEnv):
         if self.will_punish:
             reward = ERROR_PUNISHMENT
             self.will_punish = False
+            
+        if self.minor_punish:
+            reward = ERROR_PUNISHMENT / 2
+            self.minor_punish = False
         
         return obs, reward, terminated, truncated, self.stats
          

@@ -73,10 +73,11 @@ class LLMAgent(BaseAgent):
     
 class RLAgent(BaseAgent):
     
-    def __init__(self, player, test_mode=False):
+    def __init__(self, player, test_mode=False, use_checkpoint=False):
         super().__init__(player)
         self.stats = {}
         self.test_mode = test_mode
+        self.use_checkpoint = use_checkpoint
         
     def setup_model(self, env):
         
@@ -91,18 +92,18 @@ class RLAgent(BaseAgent):
         self.model = PPO(
             ActorCriticPolicy, 
             env, 
-            n_steps=8,
+            n_steps=24,
             verbose=1, 
-            batch_size=8,
-            learning_rate=3e-5,
+            batch_size=24,
+            learning_rate=1e-5,
             device='cpu',
             policy_kwargs=policy_kwargs,
             tensorboard_log="output/tensorboard"
         )
         
-        if self.test_mode:
+        if self.test_mode or self.use_checkpoint:
             print("Loading trained model")
-            self.model.load("output/saerl_model")
+            self.model.load("output/saerl_model_biggest")
     
     # Used during testing
     def act(self, state):

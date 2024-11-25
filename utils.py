@@ -116,15 +116,20 @@ def display_board(board, print_board=False):
 
 def get_valid_move(agent, state, api_format, verbose=False, is_sae_rl=False):
     for _ in range(RETRY_COUNT):
+        
+        minor_punish = False
+        
         try:
             completion_text = get_completion(agent.model, api_format)
             move = extract_move(completion_text)
             
+            if verbose:
+                print(state)
+                print(move)
+            
             # Check if move is already taken
             if state[move] in ['X', 'O']:
-                if verbose:
-                    print(state)
-                    print(move)
+                minor_punish = True
                 raise ValueError("Move already taken")
             return move, completion_text
         
@@ -135,9 +140,13 @@ def get_valid_move(agent, state, api_format, verbose=False, is_sae_rl=False):
             time.sleep(SLEEP_TIME)
         
     add_statistic(agent.stats, 'fail_safe')
+    completion_text = "Error"
     
     if is_sae_rl:
-        agent.will_punish = True
+        if minor_punish:
+            agent.minor_punish = True
+        else:
+            agent.will_punish = True
     
     return random.choice([i for i, spot in enumerate(state) if spot not in ['X', 'O']]), completion_text
 

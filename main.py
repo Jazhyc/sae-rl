@@ -10,6 +10,7 @@ from constants import TEACHER, STUDENT, NUM_GAMES, NUM_ENVS
 from stable_baselines3.common.callbacks import CheckpointCallback
 from stable_baselines3.common.env_util import make_vec_env
 from stable_baselines3.common.vec_env import SubprocVecEnv
+from stable_baselines3.common.monitor import Monitor
 
 def baseline_experiment(agent, env, num_games=NUM_GAMES):
     for _ in tqdm(range(num_games)):
@@ -19,7 +20,7 @@ def saerl_learning(agent, env, num_steps):
     
     checkpoint_callback = CheckpointCallback(
         save_freq=100,
-        save_path="./output/checkpoints/exp5_final/",
+        save_path="./output/checkpoints/exp6_hope/",
         name_prefix="saerl_in_progress",
         save_replay_buffer=True,
         save_vecnormalize=True,
@@ -56,26 +57,21 @@ def regular_game(student, env, verbose=False):
         
         state = new_state
 
-def run_experiment(num_games=NUM_GAMES, get_context=False, use_rl_agent=False, test_agent=False):
+def run_experiment(num_games=NUM_GAMES, get_context=False, use_rl_agent=False, test_agent=False, use_checkpoint=False):
     
     move_checker = MoveChecker()
     teacher = OptimalAgent(TEACHER, move_checker)
     
     if use_rl_agent:
-        student = RLAgent(STUDENT, test_mode=test_agent)
-        
-        def make_env():
-            def _init():
-                return TicTacToeSAE(move_checker, teacher, test_agent)
-            return _init
+        student = RLAgent(STUDENT, test_mode=test_agent, use_checkpoint=use_checkpoint)
 
         # Create X parallel environments
         if NUM_ENVS == 1 or test_agent:
             env = TicTacToeSAE(move_checker, teacher, test_agent)
         else:
             env = SubprocVecEnv([
-                lambda: TicTacToeSAE(move_checker, teacher, test_agent) 
-                for _ in range(NUM_ENVS)  # Creates X parallel environments
+                lambda: Monitor(TicTacToeSAE(move_checker, teacher, test_agent), filename=f"monitor_{i}.csv")
+                for i in range(NUM_ENVS)  # Creates X parallel environments
             ])
         
         saerl_learning(student, env, num_games)
@@ -93,4 +89,4 @@ def run_experiment(num_games=NUM_GAMES, get_context=False, use_rl_agent=False, t
     return student, env, results
 
 if __name__ == '__main__':
-    results_tuple = run_experiment(num_games=10000, get_context=False, use_rl_agent=True)
+    results_tuple = run_experiment(num_games=6000, get_context=False, use_rl_agent=True, use_checkpoint=True)
