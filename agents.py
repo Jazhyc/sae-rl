@@ -8,6 +8,8 @@ from utils import add_statistic, get_valid_move, get_top_features, get_base_api_
 from stable_baselines3 import PPO
 from stable_baselines3.common.policies import ActorCriticPolicy
 
+from stable_baselines3.sac import MlpPolicy, SAC
+
 class BaseAgent():
     
     def __init__(self, player):
@@ -81,29 +83,22 @@ class RLAgent(BaseAgent):
         
     def setup_model(self, env):
         
-        policy_kwargs = dict(
-            net_arch=dict(
-                pi=[100, 100, 100],  # Actor network architecture
-                vf=[100, 100, 100]   # Critic network architecture
-            ),
-            activation_fn=nn.ReLU
-        )
-        
-        self.model = PPO(
-            ActorCriticPolicy, 
-            env, 
-            n_steps=24,
-            verbose=1, 
-            batch_size=24,
-            learning_rate=1e-5,
-            device='cpu',
-            policy_kwargs=policy_kwargs,
-            tensorboard_log="output/tensorboard"
-        )
+        # Use sac algorithm
+        if not self.test_mode:
+            self.model = SAC(
+                MlpPolicy,
+                env,
+                verbose=1,
+                batch_size=256,
+                tensorboard_log="output/tensorboard/",
+                device='cpu',
+                learning_rate=3e-4,
+            )
         
         if self.test_mode or self.use_checkpoint:
-            print("Loading trained model")
-            self.model.load("output/saerl_model_biggest")
+            print("Loading trained model from disk")
+            self.model = SAC.load("output/saerl_model_load_fix.zip", env=env)
+            self.model.load_replay_buffer("output/saerl_replay_buffer_load_fix.pkl")
     
     # Used during testing
     def act(self, state):

@@ -20,7 +20,7 @@ def saerl_learning(agent, env, num_steps):
     
     checkpoint_callback = CheckpointCallback(
         save_freq=100,
-        save_path="./output/checkpoints/exp6_hope/",
+        save_path="./output/checkpoints/exp10/",
         name_prefix="saerl_in_progress",
         save_replay_buffer=True,
         save_vecnormalize=True,
@@ -30,7 +30,8 @@ def saerl_learning(agent, env, num_steps):
     
     if not agent.test_mode:
         agent.model.learn(total_timesteps=num_steps, callback=checkpoint_callback, progress_bar=True)
-        agent.model.save("output/saerl_model_biggest")
+        agent.model.save("output/saerl_model_load_fix")
+        agent.model.save_replay_buffer("output/saerl_replay_buffer_load_fix")
     else:
         for _ in tqdm(range(num_steps)):
             regular_game(agent, env)
@@ -84,9 +85,13 @@ def run_experiment(num_games=NUM_GAMES, get_context=False, use_rl_agent=False, t
     # The context takes a long time to generate
     student.get_context = get_context
     
-    results = env.results
+    results = None
+    
+    # Expect to only use single environment for testing
+    if test_agent:
+        results = env.results
     
     return student, env, results
 
 if __name__ == '__main__':
-    results_tuple = run_experiment(num_games=6000, get_context=False, use_rl_agent=True, use_checkpoint=True)
+    results_tuple = run_experiment(num_games=10000, get_context=False, use_rl_agent=True, use_checkpoint=True)

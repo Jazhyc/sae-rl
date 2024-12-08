@@ -17,7 +17,8 @@ class TicTacToeEnv(gym.Env):
         
         self.reward_magnitude = 2
         self.reward_draw = 10
-        self.reward_optimal_move = 1
+        self.reward_optimal_move = 10 # Should this be equal to reward_draw?
+        self.reward_suboptimal_move = -2
         
         # These would be used in regular RL
         self.action_space = gym.spaces.Discrete(9)
@@ -93,6 +94,9 @@ class TicTacToeEnv(gym.Env):
             raise ValueError("Invalid action. Position already taken")
         if current_player not in ['X', 'O']:
             raise ValueError("Invalid player. Must be X or O")
+        
+        # Make copy of board
+        old_board = self.board.copy()
 
         # Place mark on board
         self.board[action] = current_player
@@ -116,12 +120,12 @@ class TicTacToeEnv(gym.Env):
             print("Draw")
             reward = self.reward_draw
         else:
-            if action in self.move_checker.get_optimal_moves(self.board, current_player):
+            if action in self.move_checker.get_optimal_moves(old_board, current_player):
                 # Give the player who made the optimal move a small reward
                 reward = self.reward_optimal_move if current_player == 'O' else 0
             else:
                 # Penalize the player who made the suboptimal move
-                reward = -self.reward_optimal_move if current_player == 'O' else 0
+                reward = self.reward_suboptimal_move if current_player == 'O' else 0
         
         # Immediately compute the teacher's move if the game is not done
         if not done and current_player != 'X':
@@ -149,6 +153,7 @@ class TicTacToeSAE(TicTacToeEnv):
         
         # Each action corresponds to a continuous space bounded by STEERING_BOUND for each element in action_features
         self.action_space = gym.spaces.Box(low=-STEERING_BOUND, high=STEERING_BOUND, shape=(true_action_length,), dtype=float)
+        print("Bound:", STEERING_BOUND)
         self.observation_space = gym.spaces.Box(low=0, high=2, shape=(9,), dtype=int)
         
         # Used when the agent makes an invalid move, set by get_valid_move
