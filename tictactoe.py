@@ -1,6 +1,6 @@
 from agents import display_board
 import gymnasium as gym
-from constants import STUDENT, NUM_ACTIONS_SAE, STEERING_BOUND, ERROR_PUNISHMENT
+from constants import STUDENT, NUM_ACTIONS_SAE, STEERING_BOUND, ERROR_PUNISHMENT, MODEL
 from utils import get_base_api_format, get_valid_move, convert_board_to_observation, add_statistic, append_statistic
 from copy import deepcopy
 import goodfire
@@ -160,7 +160,7 @@ class TicTacToeSAE(TicTacToeEnv):
         self.will_punish = False
         self.minor_punish = False
         
-        self.model = goodfire.Variant("meta-llama/Meta-Llama-3-8B-Instruct")
+        self.model = goodfire.Variant(MODEL)
         self.api_template = get_base_api_format()
         
         self.stats = {'activations': {}}

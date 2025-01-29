@@ -71,7 +71,7 @@ def run_experiment(num_games=NUM_GAMES, get_context=False, use_rl_agent=False, t
             env = TicTacToeSAE(move_checker, teacher, test_agent)
         else:
             env = SubprocVecEnv([
-                lambda: Monitor(TicTacToeSAE(move_checker, teacher, test_agent), filename=f"monitor_{i}.csv")
+                lambda i=i: Monitor(TicTacToeSAE(move_checker, teacher, test_agent), filename=f"monitor_{i}.csv")
                 for i in range(NUM_ENVS)  # Creates X parallel environments
             ])
         

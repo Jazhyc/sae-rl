@@ -10,3 +10,5 @@ RETRY_COUNT = 2
 SLEEP_TIME = 3
 STEERING_BOUND = 0.2
 ERROR_PUNISHMENT = -10
+
+MODEL = 'meta-llama/Meta-Llama-3.1-8B-Instruct'
