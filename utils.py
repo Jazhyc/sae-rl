@@ -64,9 +64,16 @@ def append_statistic(stats, key, value):
         stats[key].append(value)
     return stats
 
-@tenacity.retry(stop=tenacity.stop_after_attempt(3), wait=tenacity.wait_exponential(multiplier=2, min=15, max=60), retry=tenacity.retry_if_exception_type(goodfire.api.exceptions.RateLimitException))
 def get_completion(model, api_format):
-    
+    """Wrapper function to handle retry errors"""
+    try:
+        return _get_completion_with_retry(model, api_format)
+    except tenacity.RetryError:
+        print("Gave up after 3 retries (60 seconds) due to rate limiting")
+        raise
+
+@tenacity.retry(stop=tenacity.stop_after_attempt(3), wait=tenacity.wait_exponential(multiplier=2, min=15, max=60), retry=tenacity.retry_if_exception_type(goodfire.api.exceptions.RateLimitException))
+def _get_completion_with_retry(model, api_format):
     try:
         completion = client.chat.completions.create(
             model=model,
