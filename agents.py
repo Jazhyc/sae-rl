@@ -5,6 +5,7 @@ import torch.nn as nn
 
 from copy import deepcopy
 from utils import add_statistic, get_valid_move, get_top_features, get_base_api_format, display_board
+from constants import MODEL
 from stable_baselines3 import PPO
 from stable_baselines3.common.policies import ActorCriticPolicy
 
@@ -46,7 +47,7 @@ class LLMAgent(BaseAgent):
     def __init__(self, player, get_context=False):
         self.player = player
         
-        self.model = goodfire.Variant("meta-llama/Meta-Llama-3-8B-Instruct")
+        self.model = goodfire.Variant(MODEL)
         
         self.stats = {'top_features': {}}
         self.get_context = get_context

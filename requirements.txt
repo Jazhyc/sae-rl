@@ -1,7 +1,8 @@
-goodfire==0.2.39
-gymnasium==1.0.0
-numpy==2.1.3
-python-dotenv==1.0.1
-stable_baselines3==2.4.0
-torch==2.5.1
-tqdm==4.67.0
+goodfire
+gymnasium
+numpy
+python-dotenv
+stable_baselines3
+tenacity
+torch
+tqdm
